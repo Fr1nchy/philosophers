@@ -5,11 +5,11 @@
 #include <unistd.h>
 #include <stdlib.h>
 #include <fcntl.h>
+#include <semaphore.h>
 
 typedef enum{think, eat, wait} T_state;
 
 typedef struct{
-  struct philosopher * eater;
   pthread_mutex_t mutex;
 }spoon;
 
@@ -18,58 +18,74 @@ typedef struct {
   spoon * left_hand;
   T_state state;
   pthread_t tid;
-
+  int number_thread ;
+  int max_food;
 }philosopher;
 
+// Semaphore global pour éviter que tous les philosophes essayent de prendre des baguettes
+sem_t sema;
 
 void take_spoon(philosopher * philo){
-
+    philo->state = wait;
+    printf("Le philosophe %i veut manger, il est en attente des cuillères\n",philo->number_thread);
+    sem_wait(&sema);
+    pthread_mutex_lock(&(philo->right_hand->mutex));
+    pthread_mutex_lock(&(philo->left_hand->mutex));
 }
 
 void eating(philosopher * philo){
-  printf("Le philosophe %lu mange",philo->tid);
+    philo->state = eat;
+    printf("Le philosophe %i mange\n",philo->number_thread);
+    srand(philo->tid);
+    sleep (rand() / RAND_MAX * 1000000.) ;
 }
-
+// function drop the mutex on spoons taken
 void release_spoon(philosopher * philo){
-
+    pthread_mutex_unlock(&(philo->left_hand->mutex));
+    pthread_mutex_unlock(&(philo->right_hand->mutex));
+    sem_post(&sema);
+    printf("Le philosophe %i a fini de manger, il pose les cuillères\n",philo->number_thread);
 }
-
+// function think for a philosopher
 void thinking(philosopher * philo){
-  printf("Le philosophe %lu pense",philo->tid);
+    philo->state = think;
+    printf("Le philosophe %i pense\n",philo->number_thread);
+    srand(philo->tid);
+    sleep (rand() / RAND_MAX * 10000.) ;
 }
 
+// function which decribes action for a philosopher
 void * action_philosopher(void * arg){
-  philosopher * philo = (philosopher *) arg;
-  while(1){
-    thinking(philo);
-    take_spoon(philo);
-    eating(philo);
-    release_spoon(philo);
-  }
+    int i= 0;
+    philosopher * philo = (philosopher *) arg;
+    while(i < philo->max_food){
+        thinking(philo);
+        take_spoon(philo);
+        eating(philo);
+        release_spoon(philo);
+        i++;
+    }
+
   return NULL;
 }
 
+// initialization of tab struct spoon
 void init_spoons(spoon * tab_spoon,int nb_spoon){
   int i;
   for(i = 0;i<nb_spoon;i++){
-    spoon new_spoon;
-    new_spoon.eater = NULL;
-    pthread_mutex_init(&(new_spoon.mutex),NULL);
-    tab_spoon[i] = new_spoon;
+    pthread_mutex_init(&(tab_spoon[i].mutex),NULL);
   }
 
 }
-
-void init_philosophers(philosopher * tab_philosopher,spoon * tab_spoon,int nb_philosopher){
-  int i;
-  for(i = 0;i<nb_philosopher;i++){
-    philosopher new_philosopher;
-    new_philosopher.right_hand = &(tab_spoon[i]);
-    new_philosopher.left_hand = &(tab_spoon[(i+1)%nb_philosopher]);
-    new_philosopher.state = think;
-    tab_philosopher[i] = new_philosopher;
-    pthread_create (&(new_philosopher.tid),NULL,action_philosopher,&new_philosopher);
-
+// initialization of tab struct philosopher
+void init_philosophers(philosopher * tab_philosopher,spoon * tab_spoon,int nb_philosopher,int max_food){
+  for(int i = 0;i<nb_philosopher;i++){
+    tab_philosopher[i].right_hand = &(tab_spoon[i]);
+    tab_philosopher[i].left_hand = &(tab_spoon[(i+1)%nb_philosopher]);
+    tab_philosopher[i].state = think;
+    tab_philosopher[i].number_thread = i;
+    tab_philosopher[i].max_food = max_food;
+    pthread_create (&(tab_philosopher[i].tid),NULL,action_philosopher,&tab_philosopher[i]);
   }
 }
 
@@ -77,38 +93,27 @@ int main (int argc, char **argv){
 //  pthread_mutex_t global_mutex;
   philosopher * tab_philosopher;
   spoon * tab_spoon;
-  int nb_philosophers;
+  int nb_philosophers,max_food;
 
-  if (argc != 2){
-    fprintf(stderr, "usage : %s nb_philosophers\n", argv[0]) ;
+  if (argc != 3){
+    fprintf(stderr, "usage : %s nb_philosophers nb_max_food \n", argv[0]) ;
     exit (-1) ;
   }
   nb_philosophers = atoi(argv[1]);
+  max_food = atoi(argv[2]);
+  sem_init(&sema,0,nb_philosophers-1);
+
   tab_philosopher = malloc(sizeof(philosopher)*nb_philosophers);
   tab_spoon = malloc(sizeof(spoon)*nb_philosophers);
+
   init_spoons(tab_spoon,nb_philosophers);
-  init_philosophers(tab_philosopher,tab_spoon,nb_philosophers);
+  init_philosophers(tab_philosopher,tab_spoon,nb_philosophers,max_food);
 
   for (int i = 0; i < nb_philosophers; i++){
     pthread_join (tab_philosopher[i].tid, NULL) ;
   }
 
+  free(tab_philosopher);
+  free(tab_spoon);
   return EXIT_SUCCESS;
 }
-
-/*
-void take_fork(pthread_mutex_t m){
-
-    pthread_mutex_lock(&m);
-    while (left_fork || right_fork)
-    {
-        cond_wait(m, eaten_queue);
-    }
-
-    pthread_mutex_unlock(&m);
-    cond_signal(hungry_queue);
-
-}
-
-void release_fork()
-*/
