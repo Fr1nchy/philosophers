@@ -26,14 +26,14 @@ typedef struct {
 sem_t sema;
 pthread_mutex_t mut_tab_philo;
 
-int ate_more_than_others(philosopher philo){
-  int i = 1, min = philo->tab_philo[0];
+/*int ate_more_than_others(philosopher philo){
+  int i = 1, min = (philo->tab_philo)->nb_eaten;
   pthread_mutex_lock(&mut_tab_philo);
   while(i < philo->nb_philosopher)
   {
-  	if (philo->tid != philo->tab_philo[i])
+  	if (philo->tid != philo->tab_philo->tid)
   	{
-  		if (philo->tab_philo[i].nb_eaten < min)
+  		if ((philo->tab_philo[i])->nb_eaten < min)
   		{
   			min = philo->tab_philo[i];
   		}
@@ -47,16 +47,16 @@ int ate_more_than_others(philosopher philo){
     return 1;
   }
   pthread_mutex_unlock(&mut_tab_philo);
-}
+}*/
 
 void take_spoon(philosopher * philo){
     philo->state = wait;
     printf("Le philosophe %i veut manger, il est en attente des cuillères\n",philo->number_thread);
-    if(ate_more_than_others(philo)==0){
-        sem_wait(&sema);
-        pthread_mutex_lock(&(philo->right_hand->mutex));
-        pthread_mutex_lock(&(philo->left_hand->mutex));
-    }
+    //if(ate_more_than_others(philo)==0){
+    sem_wait(&sema);
+    pthread_mutex_lock(&(philo->right_hand->mutex));
+    pthread_mutex_lock(&(philo->left_hand->mutex));
+    //}
 }
 
 void eating(philosopher * philo){
@@ -71,7 +71,7 @@ void release_spoon(philosopher * philo){
     pthread_mutex_unlock(&(philo->right_hand->mutex));
     sem_post(&sema);
     printf("Le philosophe %i a fini de manger, il pose les cuillères\n",philo->number_thread);
-    (philo->nb_eaten)++;
+    //(philo->nb_eaten)++;
 }
 // function think for a philosopher
 void thinking(philosopher * philo){
@@ -112,9 +112,9 @@ void init_philosophers(philosopher * tab_philosopher,spoon * tab_spoon,int nb_ph
     tab_philosopher[i].state = think;
     tab_philosopher[i].number_thread = i;
     tab_philosopher[i].max_food = max_food;
-    tab_philosopher[i].nb_eaten = 0;
+    /*tab_philosopher[i].nb_eaten = 0;
     tab_philosopher[i].nb_philosopher = nb_philosopher;
-    tab_philosopher[i].tab_philo = tab_philosopher;
+    tab_philosopher[i].tab_philo = tab_philosopher;*/
 
     pthread_create (&(tab_philosopher[i].tid),NULL,action_philosopher,&tab_philosopher[i]);
   }
