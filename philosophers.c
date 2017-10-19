@@ -22,17 +22,26 @@ typedef struct {
   struct philosopher * tab_philo;
 }philosopher;
 
-// Semaphore global pour éviter que tous les philosophes essayent de prendre des baguettes
+// Global semaphore to prevent from all the philosophers taking one spoon
 sem_t sema;
 pthread_mutex_t mut_tab_philo;
 
-int ate_more_than_others(int nb_philosopher,philosopher * tab_philosopher,int nb_eaten){
-  int i =0;
+int ate_more_than_others(philosopher philo){
+  int i = 1, min = philo->tab_philo[0];
   pthread_mutex_lock(&mut_tab_philo);
-  while(i < nb_philosopher && nb_eaten > tab_philosopher[i].nb_eaten){
-    i++;
+  while(i < philo->nb_philosopher)
+  {
+  	if (philo->tid != philo->tab_philo[i])
+  	{
+  		if (philo->tab_philo[i].nb_eaten < min)
+  		{
+  			min = philo->tab_philo[i];
+  		}
+  	}
+    	i++;
   }
-  if(nb_eaten < tab_philosopher[i].nb_eaten){
+
+  if(philo->nb_eaten == min){
     return 0;
   }else{
     return 1;
@@ -43,7 +52,7 @@ int ate_more_than_others(int nb_philosopher,philosopher * tab_philosopher,int nb
 void take_spoon(philosopher * philo){
     philo->state = wait;
     printf("Le philosophe %i veut manger, il est en attente des cuillères\n",philo->number_thread);
-    if(ate_more_than_others(philo->nb_philosopher,(philosopher *)philo->tab_philo,philo->nb_eaten)==0){
+    if(ate_more_than_others(philo)==0){
         sem_wait(&sema);
         pthread_mutex_lock(&(philo->right_hand->mutex));
         pthread_mutex_lock(&(philo->left_hand->mutex));
@@ -103,8 +112,10 @@ void init_philosophers(philosopher * tab_philosopher,spoon * tab_spoon,int nb_ph
     tab_philosopher[i].state = think;
     tab_philosopher[i].number_thread = i;
     tab_philosopher[i].max_food = max_food;
+    tab_philosopher[i].nb_eaten = 0;
     tab_philosopher[i].nb_philosopher = nb_philosopher;
     tab_philosopher[i].tab_philo = tab_philosopher;
+
     pthread_create (&(tab_philosopher[i].tid),NULL,action_philosopher,&tab_philosopher[i]);
   }
 }
