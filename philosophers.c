@@ -65,7 +65,6 @@ void * action_philosopher(void * arg){
         release_spoon(philo);
         i++;
     }
-
   return NULL;
 }
 

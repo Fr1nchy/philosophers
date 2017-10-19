@@ -1,0 +1,28 @@
+Réponse aux questions du TD:
+
+Question 1 :
+La fonction décrivant le comportement de chaque philosophe est "action_philosopher" dans notre
+code. Cette fonction contient une boucle, bouclant jusqu'à que le philosophe est mangé sa quantité
+limite de nouriture (max_food). Dans cette boucle le philosophe va appeller une fonction penser, puis
+la fonction prendre fourchette, pour prendre les ressources correspondant aux fourchettes.
+Puis la fonction manger et enfin la fonction libérer fourchette pour qu'un autre philosophe ,
+puisse manger à son tour.
+
+Question 2:
+Si on utilise N verrous et que chacun des philosophes tentent de vérouiller l'accès à une baguettes
+alors on peut se retrouver en situation d'interblocage.
+
+Question 3:
+Avec la solution implémentant le moniteur, il peut avoir un dans certain cas des situations de famine
+selon l'enchainement des ordonnacements. De plus, dans cette solution il n'y a pas d"équité entre les threads sur
+l'accès aux ressources.Il est possible qu'un philosophe mange plusieurs fois d'afffilé avant qu'un thread n'est pu manger,
+ce n'est pas une situation de famine.Mais le problème d'interblocage décrit dans la question précédente
+est résolu.
+
+Question 4:
+Une situation de famine, c'est lorsque un threads tente d'accèder à une ressource
+mais il ne l'obtient jamais. Dans notre première version du code, la famine pouvait potentiellement arrivée
+selon l'enchainement des ordonnacements. Pour résoudre se problème, chaque philosophe vient comparer le nombre
+de fois qu'il a mangé par rapport à ses voisins, si il a trop manger il ne vient pas prendre les baguettes et
+laisse la main à une autre philosophe. Cette méthode permet de résoudre le problème de famine et de garantir
+l'équité entre les philosophes.
